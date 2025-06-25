@@ -137,4 +137,245 @@
     </div>
 
     <script>
-        // ---
+        // --- DOM Element References ---
+        const imageInput = document.getElementById('image-input');
+        const fileNameDisplay = document.getElementById('file-name');
+        const generateBtn = document.getElementById('generate-btn');
+        const outputContainer = document.getElementById('output-container');
+        const asciiOutputGrid = document.getElementById('ascii-output');
+        const downloadBtn = document.getElementById('download-btn');
+        const canvas = document.getElementById('preview-canvas');
+        const fpsSelect = document.getElementById('fps-select');
+        const ctx = canvas.getContext('2d');
+        const messageBox = document.getElementById('message-box');
+
+        // --- State Variables ---
+        const lighterRamp = ' `.-:_,;i!l~+<>/\\*()1?[]{}|tfjrxnuvczXYUJCLQ0OZmwqpdbkhao=#MW&8%B@$'.split('');
+        let imageFiles = [];
+        let asciiFrames = []; // Now stores arrays of characters, not strings
+        let animationInterval = null;
+        let gridCellElements = []; // To hold references to the span elements
+
+        // --- Event Listeners ---
+
+        imageInput.addEventListener('change', (e) => {
+            imageFiles = Array.from(e.target.files);
+            if (imageFiles.length === 0) {
+                fileNameDisplay.textContent = 'No file(s) selected';
+                generateBtn.disabled = true;
+                return;
+            }
+            fileNameDisplay.textContent = `${imageFiles.length} file(s) selected`;
+            generateBtn.disabled = false;
+        });
+
+        generateBtn.addEventListener('click', async () => {
+            if (imageFiles.length === 0) return;
+            
+            showNotification('Processing images...', 'success');
+            asciiFrames = [];
+            
+            for (const file of imageFiles) {
+                try {
+                    const asciiArtChars = await processImageFile(file);
+                    asciiFrames.push(asciiArtChars);
+                } catch (error) {
+                    showNotification(`Failed to process ${file.name}`, 'error');
+                    console.error(error);
+                }
+            }
+            
+            if (asciiFrames.length > 0) {
+                setupGrid();
+                outputContainer.classList.remove('hidden');
+                startAnimation();
+                showNotification('Generation complete!', 'success');
+            }
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const htmlContent = generateDownloadableHTML();
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ascii-animation.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        fpsSelect.addEventListener('change', () => {
+            if (animationInterval) {
+                startAnimation();
+            }
+        });
+
+
+        // --- Core Logic & Functions ---
+
+        /**
+         * Creates the grid of spans for the animation.
+         */
+        function setupGrid() {
+            asciiOutputGrid.innerHTML = ''; // Clear previous grid
+            gridCellElements = [];
+            const gridSize = 75 * 50; // Use new dimensions
+            for (let i = 0; i < gridSize; i++) {
+                const cell = document.createElement('span');
+                asciiOutputGrid.appendChild(cell);
+                gridCellElements.push(cell);
+            }
+        }
+
+        function processImageFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => resolve(imageToAscii(img));
+                    img.onerror = reject;
+                    img.src = event.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        function startAnimation() {
+            if (animationInterval) clearInterval(animationInterval);
+            if (asciiFrames.length === 0) return;
+
+            let currentFrameIndex = 0;
+            const fps = parseInt(fpsSelect.value, 10);
+            const intervalTime = 1000 / fps;
+
+            animationInterval = setInterval(() => {
+                const frameChars = asciiFrames[currentFrameIndex];
+                for (let i = 0; i < gridCellElements.length; i++) {
+                    gridCellElements[i].textContent = frameChars[i];
+                }
+                currentFrameIndex = (currentFrameIndex + 1) % asciiFrames.length;
+            }, intervalTime);
+        }
+
+        function showNotification(message, type = 'success') {
+            messageBox.textContent = message;
+            messageBox.className = `fixed bottom-5 right-5 text-white py-2 px-5 rounded-lg shadow-xl opacity-0 transform translate-y-3`;
+            messageBox.classList.add(type === 'success' ? 'bg-green-500' : 'bg-red-500');
+            messageBox.classList.remove('opacity-0', 'translate-y-3');
+            setTimeout(() => messageBox.classList.add('opacity-0', 'translate-y-3'), 3000);
+        }
+
+        /**
+         * Converts an image to an array of ASCII characters based on the new sampling rules.
+         * @param {HTMLImageElement} img The image to convert.
+         * @returns {string[]} The resulting array of ASCII characters.
+         */
+        function imageToAscii(img) {
+            const refSize = 75;
+            const outputHeight = 50;
+
+            canvas.width = refSize;
+            canvas.height = refSize;
+
+            let sourceX = 0, sourceY = 0, sourceSize = Math.min(img.width, img.height);
+            if (img.width > img.height) {
+                sourceX = (img.width - img.height) / 2;
+            } else if (img.height > img.width) {
+                sourceY = (img.height - img.width) / 2;
+            }
+            ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, refSize, refSize);
+            
+            const imageData = ctx.getImageData(0, 0, refSize, refSize);
+            const pixels = imageData.data;
+            const asciiChars = [];
+            
+            const brightnessThreshold9 = 255 * 0.09;
+            const brightnessThreshold25 = 255 * 0.25;
+            const brightnessThreshold35 = 255 * 0.35;
+            const brightnessThreshold45 = 255 * 0.45;
+
+            let rowsProcessed = 0;
+            for (let y = 0; y < refSize && rowsProcessed < outputHeight; y++) {
+                if (y % 3 === 2) {
+                    continue;
+                }
+                for (let x = 0; x < refSize; x++) {
+                     const i = (y * refSize + x) * 4;
+                     const brightness = 0.2126 * pixels[i] + 0.7152 * pixels[i+1] + 0.0722 * pixels[i+2];
+                     
+                     let char;
+
+                     if (brightness < brightnessThreshold9) {
+                         char = '█';
+                     } else if (brightness < brightnessThreshold25) {
+                         char = '▓';
+                     } else if (brightness < brightnessThreshold35) {
+                         char = '▒';
+                     } else if (brightness < brightnessThreshold45) {
+                         char = '░';
+                     } else {
+                         const remainingBrightnessRange = 255 - brightnessThreshold45;
+                         const brightnessInRemainingRange = brightness - brightnessThreshold45;
+                         
+                         const invertedBrightness = remainingBrightnessRange - brightnessInRemainingRange;
+                         const rampIndex = Math.floor((invertedBrightness / remainingBrightnessRange) * (lighterRamp.length - 1));
+                         char = lighterRamp[rampIndex];
+                     }
+                     
+                     asciiChars.push(char);
+                }
+                rowsProcessed++;
+            }
+            return asciiChars;
+        }
+
+        function generateDownloadableHTML() {
+            const fps = parseInt(fpsSelect.value, 10);
+            const framesData = JSON.stringify(asciiFrames);
+
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ASCII Animation</title>
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f9fafb; font-family: 'Inconsolata', 'Courier New', monospace; }
+        #animation { font-size: 8px; line-height: 0.8; background-color: #ffffff; color: #000000; border: 1px solid #d1d5db; padding: 1rem; border-radius: 0.5rem; display: grid; grid-template-columns: repeat(75, auto); justify-content: center;}
+        #animation span { text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="animation"></div>
+    <script>
+        const frames = ${framesData};
+        const animationElement = document.getElementById('animation');
+        const cells = [];
+        
+        for (let i = 0; i < 75 * 50; i++) {
+            const cell = document.createElement('span');
+            animationElement.appendChild(cell);
+            cells.push(cell);
+        }
+
+        let currentFrameIndex = 0;
+        const intervalTime = 1000 / ${fps};
+        
+        if (frames && frames.length > 0) {
+            setInterval(() => {
+                const frameChars = frames[currentFrameIndex];
+                for (let i = 0; i < cells.length; i++) {
+                    cells[i].textContent = frameChars[i] || ' ';
+                }
+                currentFrameIndex = (currentFrameIndex + 1) % frames.length;
+            }, intervalTime);
+        }
+    <\/script>
+</body>
+</html>`;
+        }
+    </script>
+</body>
+</html>
