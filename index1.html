@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated ASCII Art Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inconsolata:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+            color: #111827;
+        }
+        #ascii-output {
+            font-family: 'Inconsolata', 'Courier New', monospace;
+            font-size: 8px;
+            line-height: 0.8;
+            background-color: #ffffff;
+            color: #000000;
+            display: grid;
+            grid-template-columns: repeat(75, auto);
+            justify-content: center;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            border: 1px solid #d1d5db;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        #ascii-output span {
+            text-align: center;
+        }
+        .file-input-label, #generate-btn {
+            cursor: pointer;
+        }
+        #message-box {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        /* Style for aspect ratio container */
+        .aspect-ratio-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 75%; /* 4:3 aspect ratio (3 / 4 * 100) */
+            height: 0;
+        }
+        .aspect-ratio-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-2">Animated ASCII Art Generator</h1>
+            <p class="text-lg text-gray-600">Create looping ASCII animations from multiple images.</p>
+        </header>
+
+        <main class="bg-white/60 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200">
+            <div class="flex flex-col md:flex-row items-center gap-6 mb-6">
+                <label for="image-input" class="file-input-label w-full md:w-auto flex-shrink-0 bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-indigo-700 transition-colors duration-300 text-center">
+                    Choose Image(s)
+                </label>
+                <input type="file" id="image-input" class="hidden" accept="image/png, image/jpeg, image/webp, image/gif" multiple>
+                <p id="file-name" class="text-gray-500 truncate w-full text-center md:text-left">No file(s) selected</p>
+            </div>
+
+            <div class="mb-6">
+                <label for="fps-select" class="block mb-2 text-sm font-medium text-gray-900">Frame Rate (FPS):</label>
+                <select id="fps-select" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="5" selected>5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="24">24</option>
+                    <option value="30">30</option>
+                </select>
+            </div>
+            
+            <div class="text-center mb-8">
+                 <button id="generate-btn" class="w-full md:w-auto bg-green-600 text-white font-bold py-3 px-12 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                    Generate
+                </button>
+            </div>
+            
+            <div id="output-container" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-gray-900">Your ASCII Animation</h2>
+                    <div class="flex gap-2">
+                        <button id="download-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200 border border-gray-300">Download .html</button>
+                    </div>
+                </div>
+                <div class="flex justify-center">
+                   <div id="ascii-output"></div>
+                </div>
+            </div>
+
+        </main>
+
+        <section id="examples-section" class="mt-12 w-full max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Examples</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3 text-center">Example 1</h3>
+                    <div class="aspect-ratio-container bg-black rounded-md">
+                        <iframe src="examples/example1.html" title="Example ASCII Animation 1"></iframe>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3 text-center">Example 2</h3>
+                    <div class="aspect-ratio-container bg-black rounded-md">
+                         <iframe src="examples/example2.html" title="Example ASCII Animation 2"></iframe>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3 text-center">Example 3</h3>
+                    <div class="aspect-ratio-container bg-black rounded-md">
+                         <iframe src="examples/example3.html" title="Example ASCII Animation 3"></iframe>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3 text-center">Example 4</h3>
+                    <div class="aspect-ratio-container bg-black rounded-md">
+                         <iframe src="examples/example4.html" title="Example ASCII Animation 4"></iframe>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+    <canvas id="preview-canvas" class="hidden"></canvas>
+
+    <div id="message-box" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-5 rounded-lg shadow-xl opacity-0 transform translate-y-3">
+        Message
+    </div>
+
+    <script>
+        // --- DOM Element References ---
+        const imageInput = document.getElementById('image-input');
+        const fileNameDisplay = document.getElementById('file-name');
+        const generateBtn = document.getElementById('generate-btn');
+        const outputContainer = document.getElementById('output-container');
+        const asciiOutputGrid = document.getElementById('ascii-output');
+        const downloadBtn = document.getElementById('download-btn');
+        const canvas = document.getElementById('preview-canvas');
+        const fpsSelect = document.getElementById('fps-select');
+        const ctx = canvas.getContext('2d');
+        const messageBox = document.getElementById('message-box');
+
+        // --- State Variables ---
+        const lighterRamp = ' `.-:_,;i!l~+<>/\\*()1?[]{}|tfjrxnuvczXYUJCLQ0OZmwqpdbkhao=#MW&8%B@$'.split('');
+        let imageFiles = [];
+        let asciiFrames = []; // Now stores arrays of characters, not strings
+        let animationInterval = null;
+        let gridCellElements = []; // To hold references to the span elements
+
+        // --- Event Listeners ---
+
+        imageInput.addEventListener('change', (e) => {
+            imageFiles = Array.from(e.target.files);
+            if (imageFiles.length === 0) {
+                fileNameDisplay.textContent = 'No file(s) selected';
+                generateBtn.disabled = true;
+                return;
+            }
+            fileNameDisplay.textContent = `${imageFiles.length} file(s) selected`;
+            generateBtn.disabled = false;
+        });
+
+        generateBtn.addEventListener('click', async () => {
+            if (imageFiles.length === 0) return;
+            
+            showNotification('Processing images...', 'success');
+            asciiFrames = [];
+            
+            for (const file of imageFiles) {
+                try {
+                    const asciiArtChars = await processImageFile(file);
+                    asciiFrames.push(asciiArtChars);
+                } catch (error) {
+                    showNotification(`Failed to process ${file.name}`, 'error');
+                    console.error(error);
+                }
+            }
+            
+            if (asciiFrames.length > 0) {
+                setupGrid();
+                outputContainer.classList.remove('hidden');
+                startAnimation();
+                showNotification('Generation complete!', 'success');
+            }
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const htmlContent = generateDownloadableHTML();
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ascii-animation.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        fpsSelect.addEventListener('change', () => {
+            if (animationInterval) {
+                startAnimation();
+            }
+        });
+
+
+        // --- Core Logic & Functions ---
+
+        /**
+         * Creates the grid of spans for the animation.
+         */
+        function setupGrid() {
+            asciiOutputGrid.innerHTML = ''; // Clear previous grid
+            gridCellElements = [];
+            const gridSize = 75 * 50; // Use new dimensions
+            for (let i = 0; i < gridSize; i++) {
+                const cell = document.createElement('span');
+                asciiOutputGrid.appendChild(cell);
+                gridCellElements.push(cell);
+            }
+        }
+
+        function processImageFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => resolve(imageToAscii(img));
+                    img.onerror = reject;
+                    img.src = event.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        function startAnimation() {
+            if (animationInterval) clearInterval(animationInterval);
+            if (asciiFrames.length === 0) return;
+
+            let currentFrameIndex = 0;
+            const fps = parseInt(fpsSelect.value, 10);
+            const intervalTime = 1000 / fps;
+
+            animationInterval = setInterval(() => {
+                const frameChars = asciiFrames[currentFrameIndex];
+                for (let i = 0; i < gridCellElements.length; i++) {
+                    gridCellElements[i].textContent = frameChars[i];
+                }
+                currentFrameIndex = (currentFrameIndex + 1) % asciiFrames.length;
+            }, intervalTime);
+        }
+
+        function showNotification(message, type = 'success') {
+            messageBox.textContent = message;
+            messageBox.className = `fixed bottom-5 right-5 text-white py-2 px-5 rounded-lg shadow-xl opacity-0 transform translate-y-3`;
+            messageBox.classList.add(type === 'success' ? 'bg-green-500' : 'bg-red-500');
+            messageBox.classList.remove('opacity-0', 'translate-y-3');
+            setTimeout(() => messageBox.classList.add('opacity-0', 'translate-y-3'), 3000);
+        }
+
+        /**
+         * Converts an image to an array of ASCII characters based on the new sampling rules.
+         * @param {HTMLImageElement} img The image to convert.
+         * @returns {string[]} The resulting array of ASCII characters.
+         */
+        function imageToAscii(img) {
+            const refSize = 75;
+            const outputHeight = 50;
+
+            canvas.width = refSize;
+            canvas.height = refSize;
+
+            let sourceX = 0, sourceY = 0, sourceSize = Math.min(img.width, img.height);
+            if (img.width > img.height) {
+                sourceX = (img.width - img.height) / 2;
+            } else if (img.height > img.width) {
+                sourceY = (img.height - img.width) / 2;
+            }
+            ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, refSize, refSize);
+            
+            const imageData = ctx.getImageData(0, 0, refSize, refSize);
+            const pixels = imageData.data;
+            const asciiChars = [];
+            
+            const brightnessThreshold9 = 255 * 0.09;
+            const brightnessThreshold25 = 255 * 0.25;
+            const brightnessThreshold35 = 255 * 0.35;
+            const brightnessThreshold45 = 255 * 0.45;
+
+            let rowsProcessed = 0;
+            for (let y = 0; y < refSize && rowsProcessed < outputHeight; y++) {
+                if (y % 3 === 2) {
+                    continue;
+                }
+                for (let x = 0; x < refSize; x++) {
+                     const i = (y * refSize + x) * 4;
+                     const brightness = 0.2126 * pixels[i] + 0.7152 * pixels[i+1] + 0.0722 * pixels[i+2];
+                     
+                     let char;
+
+                     if (brightness < brightnessThreshold9) {
+                         char = '█';
+                     } else if (brightness < brightnessThreshold25) {
+                         char = '▓';
+                     } else if (brightness < brightnessThreshold35) {
+                         char = '▒';
+                     } else if (brightness < brightnessThreshold45) {
+                         char = '░';
+                     } else {
+                         const remainingBrightnessRange = 255 - brightnessThreshold45;
+                         const brightnessInRemainingRange = brightness - brightnessThreshold45;
+                         
+                         const invertedBrightness = remainingBrightnessRange - brightnessInRemainingRange;
+                         const rampIndex = Math.floor((invertedBrightness / remainingBrightnessRange) * (lighterRamp.length - 1));
+                         char = lighterRamp[rampIndex];
+                     }
+                     
+                     asciiChars.push(char);
+                }
+                rowsProcessed++;
+            }
+            return asciiChars;
+        }
+
+        function generateDownloadableHTML() {
+            const fps = parseInt(fpsSelect.value, 10);
+            const framesData = JSON.stringify(asciiFrames);
+
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ASCII Animation</title>
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f9fafb; font-family: 'Inconsolata', 'Courier New', monospace; }
+        #animation { font-size: 8px; line-height: 0.8; background-color: #ffffff; color: #000000; border: 1px solid #d1d5db; padding: 1rem; border-radius: 0.5rem; display: grid; grid-template-columns: repeat(75, auto); justify-content: center;}
+        #animation span { text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="animation"></div>
+    <script>
+        const frames = ${framesData};
+        const animationElement = document.getElementById('animation');
+        const cells = [];
+        
+        for (let i = 0; i < 75 * 50; i++) {
+            const cell = document.createElement('span');
+            animationElement.appendChild(cell);
+            cells.push(cell);
+        }
+
+        let currentFrameIndex = 0;
+        const intervalTime = 1000 / ${fps};
+        
+        if (frames && frames.length > 0) {
+            setInterval(() => {
+                const frameChars = frames[currentFrameIndex];
+                for (let i = 0; i < cells.length; i++) {
+                    cells[i].textContent = frameChars[i] || ' ';
+                }
+                currentFrameIndex = (currentFrameIndex + 1) % frames.length;
+            }, intervalTime);
+        }
+    <\/script>
+</body>
+</html>`;
+        }
+    </script>
+</body>
+</html>
